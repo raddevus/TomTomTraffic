@@ -1,0 +1,57 @@
+<html class='use-all-space'>
+<head>
+    <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+    <meta charset='UTF-8'>
+    <title>My Map</title>
+    <meta name='viewport'
+          content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no'/>
+    <!-- Replace version in the URL with desired library version -->
+    <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.40.1/maps/maps.css'>
+    <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.40.1/maps/css-styles/traffic-incidents.css'/>
+    <style>
+       #map {
+           width: 100vw;
+           height: 100vh;
+       }
+    </style>
+</head>
+<body>
+    <div id='map' class='map'></div>
+ <!-- Replace version in the URL with desired library version -->
+ <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.40.1/maps/maps-web.min.js"></script>
+    <script>
+      tt.setProductInfo('MainMap', '1.0.0');
+      var map = tt.map({
+          key: 'owQ2zKPhY1gWd7OmxZ3eRxo0YAgAOLUw',
+          container: 'map',
+          style: 'tomtom://vector/1/basic-main',
+          center: [-84.4943276,39.1043107],// london -0.12634, 51.50276
+          zoom: 11
+      });
+      var config = {
+            key: 'BuIACFQ2pfsaG1SGCn55wruGtDOkQ4Ad',
+            style: 'tomtom://vector/1/relative',
+            //refresh: 180000
+        };
+        var config2 = {
+            key: 'BuIACFQ2pfsaG1SGCn55wruGtDOkQ4Ad',
+            style: 's2',
+            refresh: 30000
+        };
+        map.on('load', function() {
+            // following line adds valid traffic flow
+            map.addTier(new tt.TrafficFlowTilesTier(config));
+            // following line doesn't seem to do anything
+             map.addTier(
+            new tt.TrafficIncidentTier({
+                key: 'BuIACFQ2pfsaG1SGCn55wruGtDOkQ4Ad',//your traffic incidents api key goes here
+                incidentDetails: true, //or provide more detailed configuration
+                //incidentTiles: true, //or provide more detailed configuration
+                style: 's3'
+            })); 
+        });
+        map.addControl(new tt.FullscreenControl());
+        map.addControl(new tt.NavigationControl());
+    </script>
+</body>
+</html>

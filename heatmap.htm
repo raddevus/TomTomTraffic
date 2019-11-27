@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html class='use-all-space'>
+<head>
+    <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+    <meta charset='UTF-8'>
+    <title>Maps SDK for Web - Traffic incidents heatmap</title>
+    <meta name='viewport'
+          content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no'/>
+    <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.40.1/maps/maps.css'>
+    <link rel='stylesheet' type='text/css' href='css/main.css'>
+    <style>
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+     </style>
+</head>
+<body>
+    <div id='map' class='map'></div>
+    <script src='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.40.1/maps/maps-web.min.js'></script>
+    <script src='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.40.1/services/services-web.min.js'></script>
+    <script>
+        var map = tt.map({
+            key: 'owQ2zKPhY1gWd7OmxZ3eRxo0YAgAOLUw',
+            container: 'map',
+            zoom: 5,
+            center: [-8.413585, 40.197530]
+        });
+        map.addControl(new tt.FullscreenControl());
+        map.addControl(new tt.NavigationControl());
+        console.log("run 1");
+        tt.services.incidentDetails({
+            key: 'BuIACFQ2pfsaG1SGCn55wruGtDOkQ4Ad',
+            boundingBox: map.getBounds(),
+            style: 's1',
+            zoomLevel: 10,
+            trafficModelID: '-1',
+            expandCluster: true
+        })
+            .go()
+            .then(function(response) {
+                var points = [];
+                console.log("run 2");
+                response.tm.poi.forEach(function(poi) {
+                    if (poi.id.indexOf('CLUSTER') > -1) {
+                        poi.cpoi.forEach(function(cpoi) {
+                            points.push([cpoi.p.lng, cpoi.p.lat]);
+                        });
+                    } else {
+                        points.push([poi.p.lng, poi.p.lat]);
+                    }
+                });
+                console.log("run 3");
+                map.addLayer(createHeatmapLayer(pointsToGeoJson(points)));
+                console.log("run 4");
+                map.setZoom(6);
+            });
+
+        function pointsToGeoJson(points) {
+            return {
+                type: 'FeatureCollection',
+                features: points.map(function(point) {
+                    return {
+                        geometry: {
+                            type: 'Point',
+                            coordinates: point
+                        },
+                        properties: {}
+                    }
+                })
+            };
+        }
+
+        function createHeatmapLayer(geoJson) {
+            console.log("run 6");
+            return {
+                'id': 'heatmap',
+                'type': 'heatmap',
+                'source': {
+                    'type': 'geojson',
+                    'data': geoJson
+                }
+            }
+        }
+
+    </script>
+</body>
+</html>
