@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html class='use-all-space'>
+<head>
+    <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+    <meta charset='UTF-8'>
+    <title>Maps SDK for Web - Static route</title>
+    <meta name='viewport'
+          content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no'/>
+    <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.40.1/maps/maps.css'>
+    <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.40.1/maps/css-styles/routing.css'/>
+    <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.40.1/maps/css-styles/traffic-incidents.css'/>
+</head>
+<style>
+    .icon {
+        background-size: cover;
+        height: 30px;
+        width: 30px;
+    }
+    #map {
+        width: 100vw;
+        height: 100vh;
+    }
+</style>
+<body>
+    <div id='map' class='map'></div>
+    <script src='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.40.1/maps/maps-web.min.js'></script>
+    <script src='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.40.1/services/services-web.min.js'></script>
+    <script>
+        var map = tt.map({
+            key: 'owQ2zKPhY1gWd7OmxZ3eRxo0YAgAOLUw',
+            container: 'map',
+            style: 'tomtom://vector/1/basic-main'
+        });
+        map.addControl(new tt.FullscreenControl());
+        map.addControl(new tt.NavigationControl());
+
+        function createMarkerElement(type) {
+            var element = document.createElement('div');
+            element.className = 'icon tt-icon-shield';
+            var innerElement = document.createElement('div');
+            innerElement.className = 'icon tt-icon-' + type;
+
+            element.appendChild(innerElement);
+
+            return element;
+        }
+
+        function addMarkers(feature) {
+            var startPoint, endPoint;
+            if (feature.geometry.type === 'MultiLineString') {
+                startPoint = feature.geometry.coordinates[0][0]; //get first point from first line
+                endPoint = feature.geometry.coordinates.slice(-1)[0].slice(-1)[0]; //get last point from last line
+            } else {
+                startPoint = feature.geometry.coordinates[0];
+                endPoint = feature.geometry.coordinates.slice(-1)[0];
+            }
+
+            new tt.Marker({element: createMarkerElement('start')}).setLngLat(startPoint).addTo(map)
+            new tt.Marker({element: createMarkerElement('end')}).setLngLat(endPoint).addTo(map)
+        }
+
+        function findFirstBuildingLayerId() {
+            var layers = map.getStyle().layers;
+            for (var index in layers) {
+                if (layers[index].type === 'fill-extrusion') {
+                    return layers[index].id;
+                }
+            }
+
+            throw new Error('Map style does not contain any layer with fill-extrusion type.');
+        }
+        
+        map.once('load', function() {
+            tt.services.calculateRoute({
+                key: 'TtLGlVNqEYsDvzVoOLhWy95nHVZj2qkn',
+                traffic: false,
+                locations: '-84.4570565,39.2445748:-84.5190226,39.1153633'
+            })
+            .go()
+            .then(function(response) {
+                var geojson = response.toGeoJson();
+
+                map.addLayer({
+                    'id': 'route',
+                    'type': 'line',
+                    'source': {
+                        'type': 'geojson',
+                        'data': geojson
+                    },
+                    'paint': {
+                        'line-color': '#00d7ff',
+                        'line-width': 8
+                    }
+                }, findFirstBuildingLayerId());
+                //map.addTier(new tt.TrafficFlowTilesTier(config));
+                // following line doesn't seem to do anything
+        
+                addMarkers(geojson.features[0]);
+
+                var bounds = new tt.LngLatBounds();
+                geojson.features[0].geometry.coordinates.forEach(function(point) {
+                    bounds.extend(tt.LngLat.convert(point));
+                });
+                map.fitBounds(bounds, { duration: 0, padding: 50 });
+                // following line adds valid traffic flow
+            //map.addTier(new tt.TrafficFlowTilesTier(config));
+            // following line doesn't seem to do anything
+             map.addTier(
+            new tt.TrafficIncidentTier({
+                key: 'BuIACFQ2pfsaG1SGCn55wruGtDOkQ4Ad',//your traffic incidents api key goes here
+                incidentDetails: true, //or provide more detailed configuration
+                //incidentTiles: true, //or provide more detailed configuration
+                style: 's3'
+            })); 
+            });
+        });
+        map.on('load', function() {
+            
+        });
+    </script>
+</body>
+</html>
